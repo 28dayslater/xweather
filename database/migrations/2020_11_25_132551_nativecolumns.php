@@ -18,12 +18,13 @@ class Nativecolumns extends Migration
             $table->text('city');
             $table->text('state');
             $table->decimal('lat', 4, 4);
-            $table->decimal('long', 4, 4);
+            $table->decimal('lon', 4, 4);
         });
 
         Schema::create('temperatures', function (Blueprint $table) {
-            $table->unsignedSmallInteger('hour');
             $table->foreignId('location_id')->nullable()->references('id')->on('locations');
+            $table->unsignedSmallInteger('hour');
+            $table->date('date');
             $table->decimal('value', 4, 1);
         });
     }
