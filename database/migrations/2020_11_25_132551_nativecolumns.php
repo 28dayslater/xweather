@@ -17,14 +17,14 @@ class Nativecolumns extends Migration
             $table->id();
             $table->text('city');
             $table->text('state');
-            $table->decimal('lat', 4, 4);
-            $table->decimal('lon', 4, 4);
+            $table->decimal('lat', 7, 4);
+            $table->decimal('lon', 7, 4);
+            $table->date('date');
         });
 
         Schema::create('temperatures', function (Blueprint $table) {
             $table->foreignId('location_id')->nullable()->references('id')->on('locations');
             $table->unsignedSmallInteger('hour');
-            $table->date('date');
             $table->decimal('value', 4, 1);
         });
     }

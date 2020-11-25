@@ -7,6 +7,7 @@
 require('./bootstrap');
 
 window.Vue = require('vue');
+window.Vue.config.productionTip = false
 
 /**
  * The following block of code may be used to automatically register your
@@ -27,6 +28,6 @@ Vue.component('weather-dashboard-card', require('./components/weather_dashboard_
  * or customize the JavaScript scaffolding to fit your unique needs.
  */
 
-const app = new Vue({
+window.app = new Vue({
     el: '#app',
 });
