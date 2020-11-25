@@ -14,3 +14,4 @@ use \App\Http\Controllers\WeatherController;
 */
 
 Route::resource('weather', WeatherController::class);
+Route::delete('erase', '\App\Http\Controllers\WeatherController@erase');

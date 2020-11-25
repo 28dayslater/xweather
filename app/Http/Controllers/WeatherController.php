@@ -3,9 +3,19 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Validator;
+use Log;
+use DB;
+use Illuminate\Validation\ValidationException;
+
 use App\Models\Location;
 use App\Models\Temperature;
 
+/**
+ * TODO: Move all logic out of controler methods into a service class.
+ * Add the service into the constructor and delegate the functionality
+ * to the service members.
+ */
 class WeatherController extends Controller
 {
     /**
@@ -61,7 +71,41 @@ class WeatherController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->input(),
+            [
+                'date' => 'required|date',
+                'location.city' => 'required',
+                'location.state' => 'required',
+                'location.lat' => 'required|numeric',
+                'location.lon' => 'required|numeric',
+                'location.temperature.*' => 'required|numeric'
+            ],
+            [
+                'date.required' => 'Required field',
+                'date.date' => 'Invalid date',
+                'location.city.required' => 'Required field',
+                'location.state.required' => 'Required field',
+                'location.lon.required' => 'Required field',
+                'location.lat.required' => 'Required field',
+            ]
+        );
+        // TODO: Need to validate the temperature values (count() == 24 and all numeric and in reasonable range)
+        // TODO: validate of a valid state name/code and normalize to name
+
+        if ($validator->fails()) {
+            Log::error('Validation failed', ['errors' => $validator->errors()->all()]);
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        else {
+            try {
+                $this->saveWeatherDataPoint($request->input());
+                return response()->json(['status' => 'ok'], 201);
+            }
+            catch (ValidationException $e) {
+                // The lat+lon, city and date may already exist
+                return response()->json(['errors' => $e->errors()], 400);
+            }
+        }
     }
 
     /**
@@ -107,5 +151,52 @@ class WeatherController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    /**
+     * Delete all weather data points.
+     * @return \Illuminate\Http\Response
+     */
+    public function erase(Request $request)
+    {
+        DB::transaction(function () {
+            Temperature::query()->delete();
+            Location::query()->delete();
+        });
+        return response()->json(['status' => 'ok'], 200);
+    }
+
+    /**
+     * Insert validated weather point into database.
+     * TODO: Make sure there are no duplicates. This may be done vie a compound unique index
+     * @throws ValidationException
+     */
+    protected function saveWeatherDataPoint(array $data): void
+    {
+        if (($data->id ?? null) === null) {
+            // New
+            DB::transaction(function () use($data) {
+                Log::info('>>> data: ', ['data' => $data]);
+                $record = new Location();
+                $record->date = $data['date'];
+                $record->city = $data['location']['city'];
+                $record->state = $data['location']['state'];
+                $record->lat = $data['location']['lat'];
+                $record->lon = $data['location']['lon'];
+                $record->save();
+
+                foreach ($data['temperature'] as $idx => $value) {
+                    if ($idx < 24) {
+                        $temp = new Temperature();
+                        $temp->hour = $idx;
+                        $temp->value = $value;
+                        $record->temps()->save($temp);
+                    }
+                    else {
+                        Log::warn('Too many temperature values (expected 24), ignoring');
+                    }
+                }
+            });
+        }
     }
 }

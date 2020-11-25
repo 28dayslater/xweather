@@ -1,23 +1,28 @@
-@import url(https://fonts.googleapis.com/css?family=Nunito);
-div.input[data-v-7eba88e2] {
-      display: inline-block;
-      position: relative;
-      padding: 3px 5px;
+@import url(https://fonts.googleapis.com/css?family=Nunito);div.input {
+  display: inline-block;
+  position: relative;
+  padding: 3px 5px;
 }
-input[data-v-7eba88e2] {
-      padding: 3px 0;
-      outline: none;
-      border: none;
-      background-color: inherit;
-      border-bottom: solid 1px #777;
+div.input.error input {
+  border-color: red;
 }
-input[data-v-7eba88e2]:focus {
-      border-bottom: solid 1px #4299e1;
+div.input.error label + p {
+  color: red;
 }
-p[data-v-7eba88e2] {
+input {
+  padding: 3px 0;
+  outline: none;
+  border: none;
+  background-color: inherit;
+  border-bottom: solid 1px #777;
+}
+input:focus {
+  border-bottom: solid 1px #4299e1;
+}
+p {
   font-size: 0.75rem;
 }
-label[data-v-7eba88e2] {
+label {
   position: absolute;
   cursor: text;
   top: 6px;
@@ -27,15 +32,13 @@ label[data-v-7eba88e2] {
   -webkit-transition: 0.2s;
   transition: 0.2s;
 }
-input:focus + label[data-v-7eba88e2],
-input:valid + label[data-v-7eba88e2] {
+input:focus + label,
+input:valid + label {
   cursor: default;
   margin-top: -18px;
   left: 5px;
   font-size: 0.8rem;
-}
-
-.weather-point-row[data-v-28b5baca] {
+}.weather-point-row[data-v-28b5baca] {
   display: -webkit-box;
   display: flex;
   flex-wrap: wrap;
@@ -66,6 +69,7 @@ input:valid + label[data-v-7eba88e2] {
   background-color: #f0f0f0;
   opacity: 1;
   width: 45rem;
+  max-width: 90%;
   margin: 10px auto;
   padding: 2rem;
   border-radius: 5px;
@@ -88,6 +92,10 @@ input:valid + label[data-v-7eba88e2] {
 }
 .content .temps input[type=text] {
   width: 6rem;
+}
+.content ul.errors {
+  list-style: none;
+  color: red;
 }
 form.controls[data-v-6374ee91] {
     margin-top: 2rem;

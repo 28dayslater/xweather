@@ -1,5 +1,5 @@
 <template>
-  <div class="input">
+  <div class="input" :class="{error: error}">
     <input
       :type="inputType"
       :id="inputId"
@@ -10,7 +10,7 @@
       required
     />
     <label v-if="label" :for="inputId">{{ label }}</label>
-    <p v-if="error">{{ error }}</p>
+    <p>{{ error }}</p>
     <slot></slot>
   </div>
 </template>
@@ -50,12 +50,21 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" >
     div.input {
         display: inline-block;
         position: relative;
         padding: 3px 5px;
+
+        &.error input {
+            border-color: red;
+        }
+
+        &.error label + p {
+            color: red;
+        }
     }
+
     input {
         padding: 3px 0;
         outline: none;

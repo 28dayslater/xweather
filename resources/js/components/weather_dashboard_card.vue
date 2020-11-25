@@ -13,10 +13,10 @@
                             <Input v-model="endDate" type="text" ref="endDate" label="End Date"/>
                             <Input v-model="lat" type="text" ref="lat" label="Latitude"/>
                             <Input v-model="lon" type="text" ref="lan" label="Longitude"/>
-                            <button type="button" class="btn btn-sm btn-primary" @click="filterData">Update</button>
+                            <button type="button" class="btn btn-sm btn-primary" @click="filterData">Filter</button>
                             <button type="button" class="btn btn-sm btn-secondary" @click="showAddNewForm">Add New Point</button>
 
-                            <WPModal ref="wpModal" />
+                            <WPModal ref="wpModal" @saved="onSaved"/>
                         </form>
                         <div v-for="(wp, idx) in weatherPoints">
                             <WeatherPoint :point="wp" :odd="idx%2 === 0" />
@@ -69,14 +69,7 @@
         },
 
         async mounted() {
-
-            const response = await axios.get('/api/weather');
-            if (response.status === 200) {
-                this.weatherPoints = response.data
-            }
-            else {
-                console.warn('API backend returned error')
-            }
+            await this.loadData()
         },
 
         methods: {
@@ -86,7 +79,21 @@
 
             showAddNewForm() {
                 this.$refs.wpModal.show(this.blankPoint, 'Add New Data Point')
-            }
+            },
+
+            async onSaved() {
+                await this.loadData()
+            },
+
+            async loadData() {
+                const response = await axios.get('/api/weather');
+                if (response.status === 200) {
+                    this.weatherPoints = response.data
+                }
+                else {
+                    console.warn('API backend returned error')
+                }
+            },
         }
     }
 </script>
