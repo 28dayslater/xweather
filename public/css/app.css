@@ -1,4 +1,24 @@
-@import url(https://fonts.googleapis.com/css?family=Nunito);div.input {
+@import url(https://fonts.googleapis.com/css?family=Nunito);
+form.controls[data-v-6374ee91] {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+.weather-point-row[data-v-28b5baca] {
+  display: -webkit-box;
+  display: flex;
+  flex-wrap: wrap;
+  background-color: #ccc;
+}
+.weather-point-row.odd[data-v-28b5baca] {
+  background-color: #eee;
+}
+.weather-point-row span[data-v-28b5baca] {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+}
+.weather-point-row .temps span[data-v-28b5baca] {
+  padding: 0 0 0 0.5rem;
+}div.input {
   display: inline-block;
   position: relative;
   padding: 3px 5px;
@@ -38,21 +58,6 @@ input:valid + label {
   margin-top: -18px;
   left: 5px;
   font-size: 0.8rem;
-}.weather-point-row[data-v-28b5baca] {
-  display: -webkit-box;
-  display: flex;
-  flex-wrap: wrap;
-  background-color: #ccc;
-}
-.weather-point-row.odd[data-v-28b5baca] {
-  background-color: #eee;
-}
-.weather-point-row span[data-v-28b5baca] {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-}
-.weather-point-row .temps span[data-v-28b5baca] {
-  padding: 0 0 0 0.5rem;
 }.backdrop {
   position: fixed;
   left: 0;
@@ -96,12 +101,7 @@ input:valid + label {
 .content ul.errors {
   list-style: none;
   color: red;
-}
-form.controls[data-v-6374ee91] {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-}
-@charset "UTF-8";
+}@charset "UTF-8";
 
 /*!
  * Bootstrap v4.3.1 (https://getbootstrap.com/)

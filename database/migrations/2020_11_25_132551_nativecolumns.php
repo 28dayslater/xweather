@@ -23,7 +23,9 @@ class Nativecolumns extends Migration
         });
 
         Schema::create('temperatures', function (Blueprint $table) {
-            $table->foreignId('location_id')->nullable()->references('id')->on('locations');
+            $table->foreignId('location_id')->nullable()
+                                            ->references('id')->on('locations')
+                                            ->onDelete('cascade');
             $table->unsignedSmallInteger('hour');
             $table->decimal('value', 4, 1);
         });
