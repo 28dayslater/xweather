@@ -58,6 +58,37 @@ class APITest extends TestCase
                  ->assertJsonCount(1);
     }
 
+    public function testGetLatLong()
+    {
+        foreach (['2020-10-19', '2020-10-20', '2020-10-22', '2020-10-23'] as $dt) {
+            $loc = new Location($this->cities[0]);
+            $loc->date = $dt;
+            $loc->save();
+            $temps = array_fill(0, 24, 20.5);
+            for ($idx=0; $idx<24; ++$idx) {
+                $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+                $loc->temps()->save($temp);
+            }
+        }
+        foreach (['2020-10-19', '2020-10-20', '2020-10-22'] as $dt) {
+            $loc = new Location($this->cities[1]);
+            $loc->date = $dt;
+            $loc->save();
+            $temps = array_fill(0, 24, 20.5);
+            for ($idx=0; $idx<24; ++$idx) {
+                $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+                $loc->temps()->save($temp);
+            }
+        }
+
+        $response = $this->get('/api/weather?lat=33.333&lon=11.1111');
+        $response->assertStatus(404);
+
+        $response = $this->get('/api/weather?lat=31.4428&lon=-100.4503');
+        $response->assertStatus(200)
+                 ->assertJsonCount(4);
+    }
+
     public function testEraseAll()
     {
         $loc = new Location($this->cities[0]);

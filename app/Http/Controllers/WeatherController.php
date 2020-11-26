@@ -25,35 +25,42 @@ class WeatherController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $results = [];
-        $dbData = Location::orderBy('id')
-            ->with('temps')
-            ->cursor();
-        // TODO: move this to a method as it will be reused
-        foreach ($dbData as $location) {
-            $item = [
-                'id' => $location->id,
-                'date' => $location->date,
-                'location' => [
-                    'lat' => $location->lat,
-                    'lon' => $location->lon,
-                    'city' => $location->city,
-                    'state' => $location->state
-                ],
-                'temperature' => array_fill(0,24,null)
-            ];
-            foreach ($location->temps as $temp) {
-                if ($temp->hour >= 0 && $temp->hour < 24) {
-                    $item['temperature'][$temp->hour] = $temp->value;
-                }
-            }
+        $dbdata = null;
+        $doFilter = false;
 
-            $results[] = $item;
+        $lat = $request->query('lat', null);
+        $lon = $request->query('lon', null);
+
+        if ($lat === null && $lon === null) {
+            // Get all
+            $dbData = Location::orderBy('id')
+                ->with('temps')
+                ->cursor();
         }
+        else {
+            // Filter by latitude+longitude
+            if (!is_numeric($lat) || !is_numeric($lon))
+                return response()->json(['message' => 'Invalid latitude/longitude'], 422);
+            $dbData = Location::where('lat', $lat)
+                              ->where('lon', $lon)
+                              ->orderBy('id')
+                              ->get();
+            $doFilter = true;
+        }
+
+        foreach ($dbData as $location) {
+            $results[] = $this->locationRowToTargetJson($location);
+        }
+
+        if ($doFilter and count($results) === 0)
+            return response()->json(['message' => 'No data found'], 404);
+
         return response()->json($results);
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -187,6 +194,9 @@ class WeatherController extends Controller
 
     protected function eraseAll(): void
     {
+        // XXX: The transaction and the second delete is now not actually necessary
+        //      as the migration sets ON DELETE CASCADE
+        // Keeping it just for the sake of it
         DB::transaction(function () {
             Temperature::query()->delete();
             Location::query()->delete();
@@ -213,7 +223,6 @@ class WeatherController extends Controller
         if (($data->id ?? null) === null) {
             // New
             DB::transaction(function () use($data) {
-                Log::info('>>> data: ', ['data' => $data]);
                 $record = new Location();
                 $record->date = $data['date'];
                 $record->city = $data['location']['city'];
@@ -235,5 +244,31 @@ class WeatherController extends Controller
                 }
             });
         }
+    }
+
+    /**
+     * Puts the location data in the structure defined by the API specs.
+     * @return array
+     */
+    protected function locationRowToTargetJson($location) : array
+    {
+        $item = [
+            'id' => $location->id,
+            'date' => $location->date,
+            'location' => [
+                'lat' => $location->lat,
+                'lon' => $location->lon,
+                'city' => $location->city,
+                'state' => $location->state
+            ],
+            'temperature' => array_fill(0,24,null)
+        ];
+        foreach ($location->temps as $temp) {
+            if ($temp->hour >= 0 && $temp->hour < 24) {
+                $item['temperature'][$temp->hour] = $temp->value;
+            }
+        }
+
+        return $item;
     }
 }
