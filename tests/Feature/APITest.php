@@ -54,4 +54,24 @@ class APITest extends TestCase
         $response->assertStatus(200)
                  ->assertJsonCount(1);
     }
+
+    public function testErase()
+    {
+        $loc = new Location($this->cities[0]);
+        $loc->date = '2020-10-20';
+        $loc->save();
+        $temps = array_fill(0, 24, 20.5);
+        for ($idx=0; $idx<24; ++$idx) {
+            $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+            $loc->temps()->save($temp);
+        }
+
+        $response = $this->delete('/api/erase');
+        $response->assertStatus(200);
+
+        $response1 = $this->get('/api/weather');
+        print('>>>>>> '. var_export($response1, true));
+        $response->assertStatus(200)
+                 ->assertJson([]);
+    }
 }
