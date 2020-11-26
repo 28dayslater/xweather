@@ -1,0 +1,17 @@
+San Angelo, TX,     31.442778,  -100.450279
+Tyler, TX,  32.349998,  -95.300003
+League City, TX,    29.499722,  -95.089722
+Lewisville, TX,     33.038334,  -97.006111
+College Station, TX,    30.601389,  -96.314445
+Richardson, TX,     32.965557,  -96.715836
+Amarillo, TX,   35.199165,  -101.845276
+Garland, TX,    32.907223,  -96.635277
+Stuart, FL,     27.192223,  -80.243057
+West Palm Beach, FL,    26.709723,  -80.064163
+Miami Gardens, FL,  25.942122,  -80.269920
+Miramar, FL,    25.978889,  -80.282501
+Pembroke Pines, FL,     26.012501,  -80.313614
+Tallahassee, FL,    30.455000,  -84.253334
+Palm Beach Gardens, FL,     26.838619,  -80.129967
+Auburn, NY,     42.933334,  -76.566666
+Jamestown, NY, 42.095554,   -79.238609

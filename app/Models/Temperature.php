@@ -9,5 +9,7 @@ class Temperature extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['value','hour'];
+
     public $timestamps = false;
 }

@@ -11,6 +11,8 @@ class Location extends Model
 
     public $timestamps = false;
 
+    protected $fillable = ['city', 'state', 'lat', 'lon', 'date'];
+
     /**
      * Get all temperature points for this location
      */
