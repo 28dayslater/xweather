@@ -107,8 +107,10 @@ class WeatherController extends Controller
         }
         else {
             try {
-                $this->saveWeatherDataPoint($request->input());
-                return response()->json(['status' => 'ok'], 201);
+                if ($this->saveWeatherDataPoint($request->input(), true))
+                    return response()->json(['status' => 'ok'], 201);
+                else
+                    return response()->json(['status' => 'error'], 400);
             }
             catch (ValidationException $e) {
                 // The lat+lon, city and date may already exist
@@ -217,33 +219,49 @@ class WeatherController extends Controller
      * Insert validated weather point into database.
      * TODO: Make sure there are no duplicates. This may be done vie a compound unique index
      * @throws ValidationException
+     * @returns true if inserted or false otherwise
      */
-    protected function saveWeatherDataPoint(array $data): void
+    protected function saveWeatherDataPoint(array $data, $insert=false): bool
     {
-        if (($data->id ?? null) === null) {
-            // New
-            DB::transaction(function () use($data) {
-                $record = new Location();
-                $record->date = $data['date'];
-                $record->city = $data['location']['city'];
-                $record->state = $data['location']['state'];
-                $record->lat = $data['location']['lat'];
-                $record->lon = $data['location']['lon'];
-                $record->save();
+        DB::transaction(function () use($data) {
+            $record = new Location();
+            // This is of course bound to cause problems when inserting
+            // The specs mandate handling the case with an id
+            if (is_numeric($data['id']))
+                $record->id = $data['id'];
+            $record->date = $data['date'];
+            $record->city = $data['location']['city'];
+            $record->state = $data['location']['state'];
+            $record->lat = $data['location']['lat'];
+            $record->lon = $data['location']['lon'];
 
-                foreach ($data['temperature'] as $idx => $value) {
-                    if ($idx < 24) {
-                        $temp = new Temperature();
-                        $temp->hour = $idx;
-                        $temp->value = $value;
-                        $record->temps()->save($temp);
-                    }
-                    else {
-                        Log::warn('Too many temperature values (expected 24), ignoring');
-                    }
+            if ($insert && $record->id) {
+                // Make sure POST does not try to insert a duplicate ID
+                if (Location::find($record->id)->count())
+                    return false;
+            }
+
+            try {
+                $record->save();
+            }
+            catch (Throwable $e) {
+                dd($e);
+                return false;
+            }
+
+            foreach ($data['temperature'] as $idx => $value) {
+                if ($idx < 24) {
+                    $temp = new Temperature();
+                    $temp->hour = $idx;
+                    $temp->value = $value;
+                    $record->temps()->save($temp);
                 }
-            });
-        }
+                else {
+                    Log::warn('Too many temperature values (expected 24), ignoring');
+                }
+            }
+        });
+        return true;
     }
 
     /**

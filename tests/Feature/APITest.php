@@ -138,5 +138,4 @@ class APITest extends TestCase
         $count = Location::count();
         $this->assertEquals($count, 3);
     }
-
 }
