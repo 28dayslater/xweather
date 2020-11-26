@@ -7,9 +7,11 @@ use Validator;
 use Log;
 use DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Carbon;
 
 use App\Models\Location;
 use App\Models\Temperature;
+use App\MyHelpers;
 
 /**
  * TODO: Move all logic out of controler methods into a service class.
@@ -154,16 +156,51 @@ class WeatherController extends Controller
     }
 
     /**
-     * Delete all weather data points.
+     * Delete all weather data points or points in the date range and specified geo location.
      * @return \Illuminate\Http\Response
      */
     public function erase(Request $request)
+    {
+        $haveParams = false;
+        $start = $request->query('start', null);
+        $end = $request->query('end', null);
+        $lat = $request->query('lat', null);
+        $lon = $request->query('lon', null);
+
+        if ($start === null && $end === null && $lat === null && $lon === null) {
+            $this->eraseAll();
+        }
+        else {
+            $start = MyHelpers::parseDate($start);
+            $end = MyHelpers::parseDate($end);
+            if (!$start || !$end)
+                return response()->json(['message' => 'Invalid date format'], 422);
+            if (!is_numeric($lat) || !is_numeric($lon))
+                return response()->json(['message' => 'Invalid latitude/longitude'], 422);
+
+            $this->eraseByRange($start, $end, $lat, $lon);
+        }
+
+        return response()->json(['status' => 'ok'], 200);
+    }
+
+
+    protected function eraseAll(): void
     {
         DB::transaction(function () {
             Temperature::query()->delete();
             Location::query()->delete();
         });
-        return response()->json(['status' => 'ok'], 200);
+    }
+
+    protected function eraseByRange(Carbon $start, Carbon $end, float $lat, float $lon): void
+    {
+        // DB::enableQueryLog();
+        $affected = Location::whereRaw(
+                'date >= ? and date <= ? and lat = ? and lon = ?',
+                [$start->toDateString(), $end->toDateString(), $lat, $lon])
+            ->delete();
+        // dd(DB::getQueryLog());
     }
 
     /**

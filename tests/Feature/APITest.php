@@ -9,6 +9,9 @@ use Tests\TestCase;
 use DB;
 use App\Models\Location;
 use App\Models\Temperature;
+use Illuminate\Support\Carbon;
+
+use App\MyHelpers;
 
 
 class APITest extends TestCase
@@ -55,7 +58,7 @@ class APITest extends TestCase
                  ->assertJsonCount(1);
     }
 
-    public function testErase()
+    public function testEraseAll()
     {
         $loc = new Location($this->cities[0]);
         $loc->date = '2020-10-20';
@@ -70,8 +73,39 @@ class APITest extends TestCase
         $response->assertStatus(200);
 
         $response1 = $this->get('/api/weather');
-        print('>>>>>> '. var_export($response1, true));
         $response->assertStatus(200)
                  ->assertJson([]);
     }
+
+    public function testEraseByRange()
+    {
+        Location::query()->delete();
+
+        foreach (['2020-10-19', '2020-10-20', '2020-10-22', '2020-10-23'] as $dt) {
+            $loc = new Location($this->cities[0]);
+            $loc->date = $dt;
+            $loc->save();
+            $temps = array_fill(0, 24, 20.5);
+            for ($idx=0; $idx<24; ++$idx) {
+                $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+                $loc->temps()->save($temp);
+            }
+        }
+
+        $loc = new Location($this->cities[1]);
+        $loc->date = '2020-10-21';
+        $loc->save();
+        $temps = array_fill(0, 24, 20.5);
+        for ($idx=0; $idx<24; ++$idx) {
+            $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+            $loc->temps()->save($temp);
+        }
+
+        // $request = $this->delete('/api/erase?start=20201020&end=20201022&lat=31.4428&lon=-100.4503');
+        $request = $this->delete('/api/erase?start=20201020&end=20201022&lat=31.4428&lon=-100.4503');
+        $request->assertStatus(200);
+        $count = Location::count();
+        $this->assertEquals($count, 3);
+    }
+
 }
