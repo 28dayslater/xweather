@@ -29,6 +29,8 @@ class WeatherController extends Controller
      */
     public function index(Request $request)
     {
+        DB::enableQueryLog();
+
         $results = [];
         $dbdata = null;
         $doFilter = false;
@@ -38,11 +40,20 @@ class WeatherController extends Controller
         $lat = $request->query('lat', null);
         $lon = $request->query('lon', null);
 
+        $orderBy = function () use (&$query, $request) {
+            if ($request->query('latest', null) === 'y')
+                $query = $query->orderBy('date', 'desc');
+            else
+                $query = $query->orderBy('id');
+        };
+
+        // TODO: This has become too long and too complicated. REFACTOR ME!
+        Log::debug('*** query: ', $request->query());
         if ($lat === null && $lon === null && $startDt === null && $endDt === null) {
             // Get'em all
-            $dbData = Location::orderBy('id')
-                ->with('temps')
-                ->cursor();
+            $query = Location::with('temps');
+            $orderBy();
+            $dbData = $query->cursor();
         } else {
             $errors = [];
             // Filter by latitude+longitude, start date, end date
@@ -70,9 +81,8 @@ class WeatherController extends Controller
             if (count($errors) !== 0)
                 return response()->json(['errors' => $errors], 422);
 
-            $query = Location::query();
+            $query = Location::query()->with('temps');
 
-            // DB::enableQueryLog();
             if ($startDt)
                 $query = $query->whereDate('date', '>=', $startDt);
             if ($endDt)
@@ -83,15 +93,17 @@ class WeatherController extends Controller
             if ($lat && $lon)
                 $query = $query->where('lat', $lat)->where('lon', $lon);
 
-            $dbData = $query->get();
+            $orderBy();
+            $dbData = $query->cursor();
 
-            // Log::debug('Query: ', ['query' => DB::getQueryLog()]);
             $doFilter = true;
         }
 
         foreach ($dbData as $location) {
             $results[] = $this->locationRowToTargetJson($location);
         }
+
+        Log::debug('Query: ', ['query' => DB::getQueryLog()]);
 
         if ($doFilter and count($results) === 0)
             return response()->json(['message' => 'No data found'], 404);

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
-
 use DB;
 use App\Models\Location;
 use App\Models\Temperature;
@@ -168,6 +167,27 @@ class APITest extends TestCase
 
         $response = $this->get('/api/weather?lat=31.4428&lon=-100.4503&start=20201020&end=20101020');
         $response->assertJsonCount(1);
+    }
+
+    /**
+     * Test order by latest date
+     */
+    public function testGetLatest()
+    {
+        Location::query()->delete();
+        foreach (['2020-10-19', '2020-10-20', '2020-12-02', '2020-10-23'] as $dt) {
+            $loc = new Location($this->cities[0]);
+            $loc->date = $dt;
+            $loc->save();
+            $temps = array_fill(0, 24, 20.5);
+            for ($idx = 0; $idx < 24; ++$idx) {
+                $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+                $loc->temps()->save($temp);
+            }
+        }
+
+        $response = $this->get('/api/weather?latest=y');
+        $this->assertEquals($response->original[0]['date'], '2020-12-02');
     }
 
 
