@@ -227,3 +227,5 @@ pickle-email-*.html
 node_modules/
 
 vendor/
+
+storage/framework/
