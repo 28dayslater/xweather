@@ -33,24 +33,59 @@ class WeatherController extends Controller
         $dbdata = null;
         $doFilter = false;
 
+        $startDt = $request->query('start', null);
+        $endDt = $request->query('end', null);
         $lat = $request->query('lat', null);
         $lon = $request->query('lon', null);
 
-        // TODO: filter by date range
-
-        if ($lat === null && $lon === null) {
-            // Get all
+        if ($lat === null && $lon === null && $startDt === null && $endDt === null) {
+            // Get'em all
             $dbData = Location::orderBy('id')
                 ->with('temps')
                 ->cursor();
         } else {
-            // Filter by latitude+longitude
-            if (!is_numeric($lat) || !is_numeric($lon))
-                return response()->json(['message' => 'Invalid latitude/longitude'], 422);
-            $dbData = Location::where('lat', $lat)
-                ->where('lon', $lon)
-                ->orderBy('id')
-                ->get();
+            $errors = [];
+            // Filter by latitude+longitude, start date, end date
+            // XXX: use a validator instead?
+            if ($lat !== null && $lon !== null) {
+                if (!is_numeric($lat))
+                    $errors['lat']  = 'Invalid latitude';
+                if (!is_numeric($lon))
+                    $errors['lon'] = 'Invalid longiture';
+                // TODO: the code silently ignores a case where there is only lat or lon
+                // That should probably be an error?
+            }
+
+            if ($startDt) { // have start date
+                $startDt = MyHelpers::parseDate($startDt);
+                if (!$startDt)
+                    $errors['start'] = 'Invalid start date';
+            }
+            if ($endDt) { // have end date
+                $endDt = MyHelpers::parseDate($endDt);
+                if (!$endDt)
+                    $errors['end'] = 'Invalid end date';
+            }
+
+            if (count($errors) !== 0)
+                return response()->json(['errors' => $errors], 422);
+
+            $query = Location::query();
+
+            // DB::enableQueryLog();
+            if ($startDt)
+                $query = $query->whereDate('date', '>=', $startDt);
+            if ($endDt)
+                $query = $query->whereDate('date', '<=', $endDt);
+            if ($lat !== null && $lon !== null)
+                $query = $query->where('lat', $lat)->where('lon', $lon);
+
+            if ($lat && $lon)
+                $query = $query->where('lat', $lat)->where('lon', $lon);
+
+            $dbData = $query->get();
+
+            // Log::debug('Query: ', ['query' => DB::getQueryLog()]);
             $doFilter = true;
         }
 
@@ -204,13 +239,11 @@ class WeatherController extends Controller
 
     protected function eraseByRange(Carbon $start, Carbon $end, float $lat, float $lon): void
     {
-        // DB::enableQueryLog();
         $affected = Location::whereRaw(
             'date >= ? and date <= ? and lat = ? and lon = ?',
             [$start->toDateString(), $end->toDateString(), $lat, $lon]
         )
             ->delete();
-        // dd(DB::getQueryLog());
     }
 
     /**
