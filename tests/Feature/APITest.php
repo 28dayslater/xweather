@@ -16,7 +16,7 @@ use App\MyHelpers;
 
 class APITest extends TestCase
 {
-    use RefreshDatabase;
+    // use RefreshDatabase;
 
     public function setUp(): void
     {
@@ -43,29 +43,45 @@ class APITest extends TestCase
      */
     public function testGetAll()
     {
-        $loc = new Location($this->cities[0]);
-        $loc->date = '2020-10-20';
-        $loc->save();
-        $temps = array_fill(0, 24, 20.5);
-        for ($idx=0; $idx<24; ++$idx) {
-            $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
-            $loc->temps()->save($temp);
-        }
+        Location::query()->delete();
 
-        $response = $this->get('/api/weather');
-
-        $response->assertStatus(200)
-                 ->assertJsonCount(1);
-    }
-
-    public function testGetLatLong()
-    {
         foreach (['2020-10-19', '2020-10-20', '2020-10-22', '2020-10-23'] as $dt) {
             $loc = new Location($this->cities[0]);
             $loc->date = $dt;
             $loc->save();
             $temps = array_fill(0, 24, 20.5);
-            for ($idx=0; $idx<24; ++$idx) {
+            for ($idx = 0; $idx < 24; ++$idx) {
+                $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+                $loc->temps()->save($temp);
+            }
+        }
+        foreach (['2020-11-01', '2020-11-02', '2020-11-03', '2020-11-04', '2020-11-05'] as $dt) {
+            $loc = new Location($this->cities[1]);
+            $loc->date = $dt;
+            $loc->save();
+            $temps = array_fill(0, 24, 20.5);
+            for ($idx = 0; $idx < 24; ++$idx) {
+                $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
+                $loc->temps()->save($temp);
+            }
+        }
+
+        $response = $this->get('/api/weather');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(9);
+    }
+
+    public function testGetLatLong()
+    {
+        Location::query()->delete();
+
+        foreach (['2020-10-19', '2020-10-20', '2020-10-22', '2020-10-23'] as $dt) {
+            $loc = new Location($this->cities[0]);
+            $loc->date = $dt;
+            $loc->save();
+            $temps = array_fill(0, 24, 20.5);
+            for ($idx = 0; $idx < 24; ++$idx) {
                 $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
                 $loc->temps()->save($temp);
             }
@@ -75,7 +91,7 @@ class APITest extends TestCase
             $loc->date = $dt;
             $loc->save();
             $temps = array_fill(0, 24, 20.5);
-            for ($idx=0; $idx<24; ++$idx) {
+            for ($idx = 0; $idx < 24; ++$idx) {
                 $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
                 $loc->temps()->save($temp);
             }
@@ -86,7 +102,7 @@ class APITest extends TestCase
 
         $response = $this->get('/api/weather?lat=31.4428&lon=-100.4503');
         $response->assertStatus(200)
-                 ->assertJsonCount(4);
+            ->assertJsonCount(4);
     }
 
     public function testEraseAll()
@@ -95,7 +111,7 @@ class APITest extends TestCase
         $loc->date = '2020-10-20';
         $loc->save();
         $temps = array_fill(0, 24, 20.5);
-        for ($idx=0; $idx<24; ++$idx) {
+        for ($idx = 0; $idx < 24; ++$idx) {
             $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
             $loc->temps()->save($temp);
         }
@@ -105,7 +121,7 @@ class APITest extends TestCase
 
         $response1 = $this->get('/api/weather');
         $response->assertStatus(200)
-                 ->assertJson([]);
+            ->assertJson([]);
     }
 
     public function testEraseByRange()
@@ -117,7 +133,7 @@ class APITest extends TestCase
             $loc->date = $dt;
             $loc->save();
             $temps = array_fill(0, 24, 20.5);
-            for ($idx=0; $idx<24; ++$idx) {
+            for ($idx = 0; $idx < 24; ++$idx) {
                 $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
                 $loc->temps()->save($temp);
             }
@@ -127,7 +143,7 @@ class APITest extends TestCase
         $loc->date = '2020-10-21';
         $loc->save();
         $temps = array_fill(0, 24, 20.5);
-        for ($idx=0; $idx<24; ++$idx) {
+        for ($idx = 0; $idx < 24; ++$idx) {
             $temp = new Temperature(['hour' => $idx, 'value' => 20.5]);
             $loc->temps()->save($temp);
         }
