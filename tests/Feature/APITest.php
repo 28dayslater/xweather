@@ -16,7 +16,7 @@ use App\MyHelpers;
 
 class APITest extends TestCase
 {
-    // use RefreshDatabase;
+    use RefreshDatabase;
 
     public function setUp(): void
     {
@@ -153,5 +153,34 @@ class APITest extends TestCase
         $request->assertStatus(200);
         $count = Location::count();
         $this->assertEquals($count, 3);
+    }
+
+    public function testAddNew()
+    {
+        Location::query()->delete();
+
+        $weatherPoint = [
+            'date' => '2020-10-01',
+            'location' => [
+                'city' => 'test',
+                'state' => 'FL',
+                'lat' => 20.0,
+                'lon' => 25.5
+            ],
+            'temperature' => array_fill(0, 24, 25.0)
+        ];
+        $response = $this->post('/api/weather', $weatherPoint);
+        $response->assertStatus(201);
+
+        $response1 = $this->get('/api/weather');
+        $response1->assertJsonCount(1);
+
+        // Refuse to save "POSTed" data with an id that exists
+        $id = $response1->original[0]['id'];
+        $weatherPoint['id'] = $id;
+        $weatherPoint['location']['city'] = 'Fubar';
+        $response2 = $this->post('/api/weather', $weatherPoint);
+
+        $response2->assertStatus(400);
     }
 }

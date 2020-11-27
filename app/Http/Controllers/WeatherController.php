@@ -21,7 +21,9 @@ use App\MyHelpers;
 class WeatherController extends Controller
 {
     /**
-     * Return a list of all weather temperature points ordered by id.
+     * Return a list of weather temperature points ordered by id.
+     * The results may be filtered by lat+long and a date range (start,end).
+     * The filter arguments are taken from the query params.
      *
      * @return \Illuminate\Http\Response
      */
@@ -33,6 +35,8 @@ class WeatherController extends Controller
 
         $lat = $request->query('lat', null);
         $lon = $request->query('lon', null);
+
+        // TODO: filter by date range
 
         if ($lat === null && $lon === null) {
             // Get all
@@ -105,15 +109,11 @@ class WeatherController extends Controller
             Log::error('Validation failed', ['errors' => $validator->errors()->all()]);
             return response()->json(['errors' => $validator->errors()], 422);
         } else {
-            try {
-                if ($this->saveWeatherDataPoint($request->input(), true))
-                    return response()->json(['status' => 'ok'], 201);
-                else
-                    return response()->json(['status' => 'error'], 400);
-            } catch (ValidationException $e) {
-                // The lat+lon, city and date may already exist
-                return response()->json(['errors' => $e->errors()], 400);
-            }
+            $xx = $this->saveWeatherDataPoint($request->input(), true);
+            if ($xx === true)
+                return response()->json(['status' => 'ok'], 201);
+            else
+                return response()->json(['status' => 'error'], 400);
         }
     }
 
@@ -221,29 +221,32 @@ class WeatherController extends Controller
      */
     protected function saveWeatherDataPoint(array $data, bool $insert = false): bool
     {
-        DB::transaction(function () use ($data, $insert) {
+        // Need this as we are using a transaction callback
+        $status = false;
+
+        DB::transaction(function () use ($data, $insert, &$status) {
             $record = new Location();
             // This is of course bound to cause problems when inserting
             // The specs mandate handling the case with an id
-            if (is_numeric($data['id'] ?? null))
-                $record->id = $data['id'];
+            $record->id = is_numeric($data['id'] ?? null) ? $data['id'] : null;
             $record->date = $data['date'];
             $record->city = $data['location']['city'];
             $record->state = $data['location']['state'];
             $record->lat = $data['location']['lat'];
             $record->lon = $data['location']['lon'];
 
-            if ($insert && $record->id) {
+            if ($insert && $record->id !== null) {
                 // Make sure POST does not try to insert a duplicate ID
-                if (Location::find($record->id)->count())
-                    return false;
+                if (Location::find($record->id)->count() > 0) {
+                    Log::debug('Refusing duplicate!!!');
+                    return;
+                }
             }
 
             try {
                 $record->save();
             } catch (Throwable $e) {
-                dd($e);
-                return false;
+                Log::error('! save failed: ', ['err' => $e]);
             }
 
             foreach ($data['temperature'] as $idx => $value) {
@@ -256,8 +259,9 @@ class WeatherController extends Controller
                     Log::warn('Too many temperature values (expected 24), ignoring');
                 }
             }
+            $status = true;
         });
-        return true;
+        return $status;
     }
 
     /**
