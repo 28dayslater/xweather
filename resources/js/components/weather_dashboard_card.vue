@@ -55,6 +55,7 @@
 import Input from "./input.vue";
 import WeatherPoint from "./weather_point.vue";
 import WPModal from "./wpmodal.vue";
+import moment from "moment";
 
 export default {
   components: {
@@ -94,7 +95,9 @@ export default {
   },
 
   methods: {
-    filterData() {},
+    async filterData() {
+      await this.loadData();
+    },
 
     showAddNewForm() {
       this.$refs.wpModal.show(this.blankPoint, "Add New Data Point");
@@ -105,7 +108,11 @@ export default {
     },
 
     async loadData() {
-      const response = await axios.get("/api/weather?latest=y");
+      let url = "/api/weather?latest=y";
+      if (this.startDate) url += `&start=${this.startDate}`;
+      if (this.endDate) url += `&end=${this.endDate}`;
+      if (this.lat && this.lon) url += `&lat=${this.lat}&lon=${this.lon}`;
+      const response = await axios.get(url);
       if (response.status === 200) {
         this.weatherPoints = response.data;
       } else {
