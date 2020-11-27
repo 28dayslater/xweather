@@ -15,3 +15,4 @@ use \App\Http\Controllers\WeatherController;
 
 Route::resource('weather', WeatherController::class);
 Route::delete('erase', '\App\Http\Controllers\WeatherController@erase');
+Route::patch('weather', '\App\Http\Controllers\WeatherController@store');

@@ -130,6 +130,7 @@ class WeatherController extends Controller
      */
     public function store(Request $request)
     {
+        Log::debug('req: ', ['req' => $request]);
         $validator = Validator::make(
             $request->input(),
             [
@@ -156,8 +157,11 @@ class WeatherController extends Controller
             Log::error('Validation failed', ['errors' => $validator->errors()->all()]);
             return response()->json(['errors' => $validator->errors()], 422);
         } else {
-            $xx = $this->saveWeatherDataPoint($request->input(), true);
-            if ($xx === true)
+            $id = $request->input('id', null);
+            $insert = ($id === null);
+
+            $success = $this->saveWeatherDataPoint($request->input(), $insert);
+            if ($success === true)
                 return response()->json(['status' => 'ok'], 201);
             else
                 return response()->json(['status' => 'error'], 400);
@@ -289,7 +293,11 @@ class WeatherController extends Controller
             }
 
             try {
-                $record->save();
+                if ($insert)
+                    $record->save();
+                else {
+                    // implement me!
+                }
             } catch (Throwable $e) {
                 Log::error('! save failed: ', ['err' => $e]);
             }

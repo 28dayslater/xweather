@@ -41,7 +41,11 @@
               <WPModal ref="wpModal" @saved="onSaved" />
             </form>
             <div v-for="(wp, idx) in weatherPoints">
-              <WeatherPoint :point="wp" :odd="idx % 2 === 0" />
+              <WeatherPoint
+                :point="wp"
+                :odd="idx % 2 === 0"
+                @click.native="clickWP(idx)"
+              />
             </div>
             <div v-if="weatherPoints.length === 0">No data found</div>
           </div>
@@ -118,6 +122,11 @@ export default {
       } else {
         console.warn("API backend returned error");
       }
+    },
+
+    clickWP(idx) {
+      this.editedWp = Object.assign({}, this.weatherPoints[idx]);
+      this.$refs.wpModal.show(this.editedWp, "Edit Data Point");
     },
   },
 };
