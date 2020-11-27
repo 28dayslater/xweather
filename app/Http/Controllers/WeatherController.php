@@ -39,15 +39,14 @@ class WeatherController extends Controller
             $dbData = Location::orderBy('id')
                 ->with('temps')
                 ->cursor();
-        }
-        else {
+        } else {
             // Filter by latitude+longitude
             if (!is_numeric($lat) || !is_numeric($lon))
                 return response()->json(['message' => 'Invalid latitude/longitude'], 422);
             $dbData = Location::where('lat', $lat)
-                              ->where('lon', $lon)
-                              ->orderBy('id')
-                              ->get();
+                ->where('lon', $lon)
+                ->orderBy('id')
+                ->get();
             $doFilter = true;
         }
 
@@ -80,7 +79,8 @@ class WeatherController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->input(),
+        $validator = Validator::make(
+            $request->input(),
             [
                 'date' => 'required|date',
                 'location.city' => 'required',
@@ -104,15 +104,13 @@ class WeatherController extends Controller
         if ($validator->fails()) {
             Log::error('Validation failed', ['errors' => $validator->errors()->all()]);
             return response()->json(['errors' => $validator->errors()], 422);
-        }
-        else {
+        } else {
             try {
                 if ($this->saveWeatherDataPoint($request->input(), true))
                     return response()->json(['status' => 'ok'], 201);
                 else
                     return response()->json(['status' => 'error'], 400);
-            }
-            catch (ValidationException $e) {
+            } catch (ValidationException $e) {
                 // The lat+lon, city and date may already exist
                 return response()->json(['errors' => $e->errors()], 400);
             }
@@ -178,8 +176,7 @@ class WeatherController extends Controller
 
         if ($start === null && $end === null && $lat === null && $lon === null) {
             $this->eraseAll();
-        }
-        else {
+        } else {
             $start = MyHelpers::parseDate($start);
             $end = MyHelpers::parseDate($end);
             if (!$start || !$end)
@@ -209,8 +206,9 @@ class WeatherController extends Controller
     {
         // DB::enableQueryLog();
         $affected = Location::whereRaw(
-                'date >= ? and date <= ? and lat = ? and lon = ?',
-                [$start->toDateString(), $end->toDateString(), $lat, $lon])
+            'date >= ? and date <= ? and lat = ? and lon = ?',
+            [$start->toDateString(), $end->toDateString(), $lat, $lon]
+        )
             ->delete();
         // dd(DB::getQueryLog());
     }
@@ -221,13 +219,13 @@ class WeatherController extends Controller
      * @throws ValidationException
      * @returns true if inserted or false otherwise
      */
-    protected function saveWeatherDataPoint(array $data, $insert=false): bool
+    protected function saveWeatherDataPoint(array $data, bool $insert = false): bool
     {
-        DB::transaction(function () use($data) {
+        DB::transaction(function () use ($data, $insert) {
             $record = new Location();
             // This is of course bound to cause problems when inserting
             // The specs mandate handling the case with an id
-            if (is_numeric($data['id']))
+            if (is_numeric($data['id'] ?? null))
                 $record->id = $data['id'];
             $record->date = $data['date'];
             $record->city = $data['location']['city'];
@@ -243,8 +241,7 @@ class WeatherController extends Controller
 
             try {
                 $record->save();
-            }
-            catch (Throwable $e) {
+            } catch (Throwable $e) {
                 dd($e);
                 return false;
             }
@@ -255,8 +252,7 @@ class WeatherController extends Controller
                     $temp->hour = $idx;
                     $temp->value = $value;
                     $record->temps()->save($temp);
-                }
-                else {
+                } else {
                     Log::warn('Too many temperature values (expected 24), ignoring');
                 }
             }
@@ -268,7 +264,7 @@ class WeatherController extends Controller
      * Puts the location data in the structure defined by the API specs.
      * @return array
      */
-    protected function locationRowToTargetJson($location) : array
+    protected function locationRowToTargetJson($location): array
     {
         $item = [
             'id' => $location->id,
@@ -279,7 +275,7 @@ class WeatherController extends Controller
                 'city' => $location->city,
                 'state' => $location->state
             ],
-            'temperature' => array_fill(0,24,null)
+            'temperature' => array_fill(0, 24, null)
         ];
         foreach ($location->temps as $temp) {
             if ($temp->hour >= 0 && $temp->hour < 24) {
