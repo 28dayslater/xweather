@@ -29,7 +29,7 @@ class WeatherController extends Controller
      */
     public function index(Request $request)
     {
-        DB::enableQueryLog();
+        // DB::enableQueryLog();
 
         $results = [];
         $dbdata = null;
@@ -48,7 +48,6 @@ class WeatherController extends Controller
         };
 
         // TODO: This has become too long and too complicated. REFACTOR ME!
-        Log::debug('*** query: ', $request->query());
         if ($lat === null && $lon === null && $startDt === null && $endDt === null) {
             // Get'em all
             $query = Location::with('temps');
@@ -90,9 +89,6 @@ class WeatherController extends Controller
             if ($lat !== null && $lon !== null)
                 $query = $query->where('lat', $lat)->where('lon', $lon);
 
-            if ($lat && $lon)
-                $query = $query->where('lat', $lat)->where('lon', $lon);
-
             $orderBy();
             $dbData = $query->cursor();
 
@@ -103,7 +99,7 @@ class WeatherController extends Controller
             $results[] = $this->locationRowToTargetJson($location);
         }
 
-        Log::debug('Query: ', ['query' => DB::getQueryLog()]);
+        // Log::debug('Query: ', ['query' => DB::getQueryLog()]);
 
         if ($doFilter and count($results) === 0)
             return response()->json(['message' => 'No data found'], 404);
@@ -157,9 +153,8 @@ class WeatherController extends Controller
             Log::error('Validation failed', ['errors' => $validator->errors()->all()]);
             return response()->json(['errors' => $validator->errors()], 422);
         } else {
-            $id = $request->input('id', null);
-            $insert = ($id === null);
-
+            $insert = ($request->method === 'POST');
+						
             $success = $this->saveWeatherDataPoint($request->input(), $insert);
             if ($success === true)
                 return response()->json(['status' => 'ok'], 201);
@@ -270,49 +265,50 @@ class WeatherController extends Controller
      */
     protected function saveWeatherDataPoint(array $data, bool $insert = false): bool
     {
+				Log::debug('saveWP data:', ['data' => $data]);
         // Need this as we are using a transaction callback
         $status = false;
 
         DB::transaction(function () use ($data, $insert, &$status) {
-            $record = new Location();
-            // This is of course bound to cause problems when inserting
-            // The specs mandate handling the case with an id
-            $record->id = is_numeric($data['id'] ?? null) ? $data['id'] : null;
-            $record->date = $data['date'];
-            $record->city = $data['location']['city'];
-            $record->state = $data['location']['state'];
-            $record->lat = $data['location']['lat'];
-            $record->lon = $data['location']['lon'];
-
-            if ($insert && $record->id !== null) {
-                // Make sure POST does not try to insert a duplicate ID
-                if (Location::find($record->id)->count() > 0) {
+            $id = is_numeric($data['id'] ?? null) ? $data['id'] : null;
+						Log::debug("+++ $id, insert: |$insert|");
+            if ($insert && $id !== null) {
+								Log::debug("!!!! insert and id <> null, id: $id");
+                // Make sure POST does not try to insert a duplicate ID - by the specs.
+                // I would disallow id in a POST at all
+                if (Location::find($id)->count() > 0) {
                     Log::debug('Refusing duplicate!!!');
                     return;
                 }
             }
 
-            try {
-                if ($insert)
-                    $record->save();
-                else {
-                    // implement me!
-                }
-            } catch (Throwable $e) {
-                Log::error('! save failed: ', ['err' => $e]);
+            if ($insert) {
+                $record = new Location();
+            }
+            else {
+                $record = Location::findOrFail($id); // 404 if not found
+                $record->temps()->delete();
             }
 
-            foreach ($data['temperature'] as $idx => $value) {
-                if ($idx < 24) {
-                    $temp = new Temperature();
-                    $temp->hour = $idx;
-                    $temp->value = $value;
-                    $record->temps()->save($temp);
-                } else {
-                    Log::warn('Too many temperature values (expected 24), ignoring');
+            $record->date = $data['date'];
+            foreach ($data['location'] as $property => $value)
+                $record->{$property} = $value;
+            try {
+                $record->save();
+								$temps = [];
+                foreach ($data['temperature'] as $idx => $value) {
+                    if ($idx < 24) {
+                        $temp[] = ['hour' => $idx, 'value' => $value];
+                    } else {
+                        Log::warn('Too many temperature values (expected 24), ignoring');
+                    }
                 }
+								$record->temps()->createMany($temps);
+                $status = true;
+            } catch (Throwable $e) {
+                Log::error('Save failed: ', ['err' => $e]);
+                // status is false
             }
-            $status = true;
         });
         return $status;
     }
