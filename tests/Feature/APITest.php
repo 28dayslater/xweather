@@ -266,6 +266,8 @@ class APITest extends TestCase
 
         $response1 = $this->get('/api/weather');
         $response1->assertJsonCount(1);
+        $this->assertEquals(24, count($response1->original[0]['temperature']));
+        $this->assertEquals('25.0', $response1->original[0]['temperature'][5]);
 
         // Refuse to save "POSTed" data with an id that already exists
         $id = $response1->original[0]['id'];
@@ -274,5 +276,40 @@ class APITest extends TestCase
         $response2 = $this->post('/api/weather', $weatherPoint);
 
         $response2->assertStatus(400);
+    }
+
+    /**
+     * Test update
+     */
+    public function testUpdate(): void
+    {
+        DB::table('locations')->delete();
+
+        $weatherPoint = [
+            'date' => '2020-10-01',
+            'location' => [
+                'city' => 'test',
+                'state' => 'FL',
+                'lat' => 20.0,
+                'lon' => 25.5
+            ],
+            'temperature' => array_fill(0, 24, 25.0)
+        ];
+        $response = $this->post('/api/weather', $weatherPoint);
+
+        $id = DB::table('locations')->max('id');
+        $weatherPoint['id'] = $id;
+        $weatherPoint['location']['city'] =  'fubar';
+        $weatherPoint['location']['state'] = 'baz';
+        $weatherPoint['temperature'][10] = 101.9;
+        $response = $this->patch('/api/weather', $weatherPoint);
+        $response->assertStatus(201);
+
+        $response = $this->get('/api/weather');
+        $response->assertJsonCount(1);
+        $this->assertEquals($response->original[0]['location']['city'], 'fubar');
+        $this->assertEquals($response->original[0]['location']['state'], 'baz');
+        $this->assertEquals($response->original[0]['temperature'][10], 101.9);
+
     }
 }
