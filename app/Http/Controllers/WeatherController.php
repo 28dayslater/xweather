@@ -125,27 +125,9 @@ class WeatherController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(WeatherPointRequest $request)
     {
-        $validator = Validator::make(
-            $request->input(),
-            [
-                'date' => 'required|date',
-                'location.city' => 'required',
-                'location.state' => 'required',
-                'location.lat' => 'required|numeric',
-                'location.lon' => 'required|numeric',
-                'location.temperature.*' => 'required|numeric' // does this work?
-            ],
-            [
-                'date.required' => 'Required field',
-                'date.date' => 'Invalid date',
-                'location.city.required' => 'Required field',
-                'location.state.required' => 'Required field',
-                'location.lon.required' => 'Required field',
-                'location.lat.required' => 'Required field',
-            ]
-        );
+
         // TODO: Need to validate the temperature values (count() == 24 and all numeric and in reasonable range)
         // TODO: validate of a valid state name/code and normalize to name
 
