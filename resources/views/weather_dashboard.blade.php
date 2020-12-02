@@ -7,7 +7,7 @@
 
     <title>Weather Dashboard</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="css/app.css" rel="stylesheet" type="text/css">
+    <link href="{{ mix('css/app.css') }}" rel="stylesheet" type="text/css">
 
 <body>
 
@@ -15,7 +15,7 @@
         <weather-dashboard-card></weather-dashboard-card>
     </div>
 
-    <script type="text/javascript" src="js/app.js"></script>
+    <script type="text/javascript" src="{{ mix('js/app.js') }}"></script>
 
 </body>
 
