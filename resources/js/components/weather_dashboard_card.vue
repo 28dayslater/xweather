@@ -8,21 +8,39 @@
           <div class="card-body">
             <h1>Weather Data</h1>
             <form class="controls" novalidate>
-              <h6>Filters</h6>
+              <h3>Filters</h3>
               <Input
                 v-model="startDate"
-                type="text"
+                type="date"
                 ref="startDate"
                 label="Start Date"
+                class="date"
+                :error="errors.start"
               />
               <Input
                 v-model="endDate"
-                type="text"
+                type="date"
                 ref="endDate"
                 label="End Date"
+                class="date"
+                :error="errors.end"
               />
-              <Input v-model="lat" type="text" ref="lat" label="Latitude" />
-              <Input v-model="lon" type="text" ref="lan" label="Longitude" />
+              <Input
+                v-model="lat"
+                type="text"
+                ref="lat"
+                label="Latitude"
+                class="latlon"
+                :error="errors.lat"
+              />
+              <Input
+                v-model="lon"
+                type="text"
+                ref="lan"
+                label="Longitude"
+                class="latlon"
+                :error="errors.lon"
+              />
               <button
                 type="button"
                 class="btn btn-sm btn-primary"
@@ -40,7 +58,7 @@
 
               <WPModal ref="wpModal" @saved="onSaved" />
             </form>
-            <div v-for="(wp, idx) in weatherPoints">
+            <div v-for="(wp, idx) in weatherPoints" :key="`wp.${idx}`">
               <WeatherPoint
                 :point="wp"
                 :odd="idx % 2 === 0"
@@ -87,6 +105,8 @@ export default {
         },
         temperature: new Array(24).fill(""),
       },
+      errors: {},
+      fubar: null,
     };
   },
 
@@ -116,11 +136,13 @@ export default {
       if (this.startDate) url += `&start=${this.startDate}`;
       if (this.endDate) url += `&end=${this.endDate}`;
       if (this.lat && this.lon) url += `&lat=${this.lat}&lon=${this.lon}`;
-      const response = await axios.get(url);
-      if (response.status === 200) {
+      try {
+        const response = await axios.get(url);
         this.weatherPoints = response.data;
-      } else {
-        console.warn("API backend returned error");
+      } catch (error) {
+        if (error.response.status === 422)
+          this.errors = error.response.data.errors;
+        else console.error("Backend error ", error.response);
       }
     },
 
@@ -132,9 +154,44 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss">
+@import "./resources/sass/variables";
+
+.card-header {
+  background-color: black !important;
+  color: white;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 24px;
+  color: #778;
+}
+
 form.controls {
   margin-top: 2rem;
   margin-bottom: 2rem;
+
+  h3 {
+    font-size: 1.2rem;
+    color: #778;
+    margin-bottom: 1rem;
+  }
+
+  .date {
+    width: 8rem;
+  }
+
+  .latlon {
+    width: $latlon-width;
+  }
+
+  button {
+    margin-left: 0.5rem;
+
+    &:first-of-type {
+      margin-left: 1rem;
+    }
+  }
 }
 </style>

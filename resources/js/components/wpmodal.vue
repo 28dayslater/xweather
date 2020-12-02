@@ -2,18 +2,19 @@
   <div class="content" v-show="showModal" ref="modal">
     <h2>{{ message }}</h2>
     <div id="wpform">
-      <!-- I would normaly set an error label for each input and color-code the section,
-                 however this project setup may have configuration problems
-                 that result in weird behaviour, so I had to resort to crude messages at the top -->
-      <ul class="errors">
-        <li v-for="(error, idx) in errors" :key="idx">{{ error }}</li>
-      </ul>
-      <Input type="text" v-model="point.date" label="Date" ref="date" />
+      <Input
+        type="text"
+        v-model="point.date"
+        label="Date"
+        ref="date"
+        :error="errors.date"
+      />
       <Input
         type="text"
         v-model="point.location.city"
         label="City"
         ref="city"
+        :error="errors.city"
       />
       <Input
         type="text"
@@ -21,6 +22,7 @@
         label="State"
         ref="state"
         class="state"
+        :error="errors.state"
       />
       <div class="latlon">
         <Input
@@ -29,6 +31,7 @@
           label="Latitude"
           ref="lat"
           class="geo"
+          :error="errors.lat"
         />
         <Input
           type="text"
@@ -36,6 +39,7 @@
           label="Longitude"
           ref="lon"
           class="geo"
+          :error="errors.lon"
         />
       </div>
       <div class="temps">
@@ -45,6 +49,8 @@
           v-for="(temp, idx) in point.temperature"
           :key="idx"
           v-model="point.temperature[idx]"
+          :label="hour(idx)"
+          :error="tempError(idx)"
         />
       </div>
 
@@ -86,7 +92,7 @@ export default {
         },
         temperature: Array(24).fill(""),
       },
-      errors: [],
+      errors: {},
     };
   },
 
@@ -101,11 +107,31 @@ export default {
       this.showModal = true;
     },
 
+    hour(idx) {
+      return idx < 12
+        ? `${idx % 12} am`
+        : idx == 12
+        ? `${idx} pm`
+        : `${idx % 12} pm`;
+    },
+
+    tempError(idx) {
+      return this.errors.temperature ? this.errors.temperature[idx] : "";
+    },
+
     async save(event) {
       event.preventDefault();
       try {
         this.errors = [];
-        const resp = await axios.post("/api/weather", this.point);
+        let id = this.point.id;
+        let resp = null;
+        try {
+          id = parseInt(id);
+          resp = await await axios.patch(`/api/weather`, this.point);
+        } catch {
+          resp = await await axios.post("/api/weather", this.point);
+        }
+
         if (resp.status === 200 || resp.status === 201) {
           this.showModal = false;
           this.$emit("saved");
@@ -127,7 +153,9 @@ export default {
 };
 </script>
 
-<style lang="scss" >
+<style lang="scss">
+@import "./resources/sass/variables";
+
 .backdrop {
   position: fixed;
   left: 0;
@@ -151,28 +179,29 @@ export default {
   border-radius: 5px;
   box-shadow: 5px 5px 10px #333;
 
+  .input {
+    margin-bottom: 1.2rem;
+  }
+
   .latlon {
     margin-top: 1rem;
+    width: auto !important;
   }
 
   .temps {
     margin-top: 1rem;
   }
 
-  .state.input {
-    width: 8rem;
-
-    > input {
-      width: 100%;
-    }
+  .state {
+    width: 4rem;
   }
 
-  .geo input {
-    width: 10rem;
+  .geo {
+    width: $latlon-width;
   }
 
-  .temps input[type="text"] {
-    width: 6rem;
+  .temps .input {
+    width: 4rem;
   }
 
   ul.errors {

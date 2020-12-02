@@ -6,7 +6,9 @@
     <span>{{ point.location.lat }}</span>
     <span>{{ point.location.lon }}</span>
     <span class="temps">
-      <span v-for="temp in point.temperature">{{ temp }}</span>
+      <span v-for="(temp, idx) in point.temperature" :key="`temp${idx}`">{{
+        temp
+      }}</span>
     </span>
   </div>
 </template>
@@ -34,9 +36,8 @@ export default {
   cursor: pointer;
 
   &:hover {
-    border: solid blue 1px;
-    padding-top: 0;
-    padding-bottom: 0;
+    border: dotted rgb(50, 60, 88) 1px;
+    padding: 0;
   }
 
   &.odd {

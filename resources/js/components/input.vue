@@ -1,5 +1,5 @@
 <template>
-  <div class="input" :class="{error: error}">
+  <div class="input" :class="{ error: error }">
     <input
       :type="inputType"
       :id="inputId"
@@ -10,16 +10,16 @@
       required
     />
     <label v-if="label" :for="inputId">{{ label }}</label>
-    <p>{{ error }}</p>
+    <p v-if="error">{{ error }}</p>
     <slot></slot>
   </div>
 </template>
 
 <script>
-import shortuuid from 'short-uuid'
+import shortuuid from "short-uuid";
 
 export default {
-  name: 'Input',
+  name: "Input",
 
   props: {
     value: {
@@ -33,70 +33,71 @@ export default {
 
   data() {
     return {
-      inputId: '',
-      inputType: this.type,
-    }
+      inputId: "",
+      inputType: "text",
+    };
   },
 
   created() {
-      this.inputId = shortuuid.generate()
+    this.inputId = shortuuid.generate();
   },
 
   methods: {
     focus() {
-      this.$refs.input.focus()
+      this.$refs.input.focus();
     },
   },
-}
+};
 </script>
 
-<style lang="scss" >
-    div.input {
-        display: inline-block;
-        position: relative;
-        padding: 3px 5px;
+<style lang="scss">
+div.input {
+  display: inline-block;
+  position: relative;
+  padding: 3px 5px;
 
-        &.error input {
-            border-color: red;
-        }
-
-        &.error label + p {
-            color: red;
-        }
-    }
-
-    input {
-        padding: 3px 0;
-        outline: none;
-        border: none;
-        background-color: inherit;
-        border-bottom: solid 1px #777;
-    }
-
-    input:focus {
-        border-bottom: solid 1px #4299e1;
-    }
-
-  p {
-    font-size: 0.75rem;
+  &.error input {
+    border-color: red;
+    color: red;
   }
 
-  label {
+  &.error label + p {
+    color: red;
     position: absolute;
-    cursor: text;
-    top: 6px;
-    left: 5px;
-    color: #999;
-    font-size: 1rem;
-    transition: 0.2s;
-  }
-
-  input:focus + label,
-  input:valid + label {
-    cursor: default;
-    margin-top: -18px;
-    left: 5px;
     font-size: 0.8rem;
+    bottom: -1rem;
+    margin: 0;
   }
+}
 
+input {
+  width: 100%;
+  padding: 3px 0;
+  outline: none;
+  border: none;
+  background-color: inherit;
+  border-bottom: solid 1px #777;
+}
+
+input:focus {
+  border-bottom: solid 1px #4299e1;
+}
+
+label {
+  position: absolute;
+  cursor: text;
+  top: 6px;
+  left: 5px;
+  color: #999;
+  font-size: 1rem;
+  transition: 0.2s;
+}
+
+input:focus + label,
+input:valid + label {
+  cursor: default;
+  margin-top: -18px;
+  left: 5px;
+  font-size: 0.8rem;
+}
 </style>
