@@ -42,7 +42,6 @@ class WeatherPointRequest extends FormRequest
      */
     public function withValidator($validator)
     {
-
     }
 
     public function messages()
@@ -54,7 +53,9 @@ class WeatherPointRequest extends FormRequest
             'location.state.required' => 'Required field',
             'location.lon.required' => 'Required field',
             'location.lat.required' => 'Required field',
-            'temperature.numeric' => 'Invalid temperature'
+            'location.lat.numeric' => 'Invalid latitude',
+            'location.lon.numeric' => 'Invalid longitude',
+            'temperature.*.numeric' => 'Invalid temperature'
         ];
     }
 }

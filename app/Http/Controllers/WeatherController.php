@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use App\Models\Location;
 use App\Models\Temperature;
 use App\MyHelpers;
+use App\Http\Requests\WeatherPointRequest;
 
 /**
  * TODO: Move all logic out of controler methods into a service class.
@@ -62,7 +63,7 @@ class WeatherController extends Controller
                 if (!is_numeric($lat))
                     $errors['lat']  = 'Invalid latitude';
                 if (!is_numeric($lon))
-                    $errors['lon'] = 'Invalid longiture';
+                    $errors['lon'] = 'Invalid longitude';
                 // TODO: the code silently ignores a case where there is only lat or lon
                 // That should probably be an error?
             }
@@ -127,32 +128,25 @@ class WeatherController extends Controller
      */
     public function store(WeatherPointRequest $request)
     {
+        $validatedData = $request->validated();
 
-        // TODO: Need to validate the temperature values (count() == 24 and all numeric and in reasonable range)
-        // TODO: validate of a valid state name/code and normalize to name
+        $isInsert = $request->isMethod('post');
+        $id = $request->input('id');
 
-        if ($validator->fails()) {
-            Log::error('Validation failed', ['errors' => $validator->errors()->all()]);
-            return response()->json(['errors' => $validator->errors()], 422);
-        } else {
-            $isInsert = $request->isMethod('post');
-            $id = $request->input('id');
-
-            if ($isInsert && $id !== null) {
-                // In case there is an id and the request is a POST, then make sure POST does not try to insert a duplicate ID.
-                // TODO: change this to reject request if id is in POST (POST is for new, use PATCH|PUT)
-                if (Location::find($id)->count() > 0) {
-                    Log::debug('Refusing duplicate!!!');
-                    return response()->json(['status' => 'error'], 400);
-                }
-            }
-
-            $success = $this->saveWeatherDataPoint($request->input(), $isInsert);
-            if ($success === true)
-                return response()->json(['status' => 'ok'], 201);
-            else
+        if ($isInsert && $id !== null) {
+            // In case there is an id and the request is a POST, then make sure POST does not try to insert a duplicate ID.
+            // TODO: change this to reject request if id is in POST (POST is for new, use PATCH|PUT)
+            if (Location::find($id)->count() > 0) {
+                Log::debug('Refusing duplicate!');
                 return response()->json(['status' => 'error'], 400);
+            }
         }
+
+        $success = $this->saveWeatherDataPoint($request->input(), $isInsert);
+        if ($success === true)
+            return response()->json(['status' => 'ok'], 201);
+        else
+            return response()->json(['status' => 'error'], 400);
     }
 
     /**
@@ -263,8 +257,7 @@ class WeatherController extends Controller
         DB::transaction(function () use ($data, $isInsert, &$status) {
             if ($isInsert === true) {
                 $record = new Location();
-            }
-            else {
+            } else {
                 $record = Location::findOrFail($data['id']); // 404 if not found
                 $record->temps()->delete();
             }
@@ -276,7 +269,7 @@ class WeatherController extends Controller
 
             try {
                 $record->save();
-				$temps = [];
+                $temps = [];
                 foreach ($data['temperature'] as $idx => $value) {
                     if ($idx < 24) {
                         $temps[] = ['hour' => $idx, 'value' => $value];
@@ -286,7 +279,7 @@ class WeatherController extends Controller
                 }
                 $record->temps()->createMany($temps);
                 $status = true;
-            } catch (Throwable $e) {
+            } catch (\Throwable $e) {
                 Log::error('Save failed: ', ['err' => $e]);
                 // status is false
             }
@@ -296,6 +289,7 @@ class WeatherController extends Controller
 
     /**
      * Puts the location data in the structure defined by the API specs.
+     * TODO: move to MyHelpers
      * @return array
      */
     protected function locationRowToTargetJson($location): array

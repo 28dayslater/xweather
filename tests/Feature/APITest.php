@@ -245,6 +245,32 @@ class APITest extends TestCase
     }
 
     /**
+     * Test request validation of POST/PATCH
+     */
+    public function testAddOrEditRequestValidation(): void
+    {
+        $weatherPoint = [
+            'date' => 'xxx',
+            'location' => [
+                'city' => 'test',
+                'lat' => 'fu',
+                'lon' => 'bar'
+            ],
+            'temperature' => array_fill(0, 24, 25.0)
+        ];
+        $weatherPoint['temperature'][0] = 'xxx';
+
+        $response = $this->json('POST', '/api/weather', $weatherPoint);
+        $response->assertStatus(422);
+        $errors = $response->original['errors'];
+        $this->assertEquals('Invalid date', $errors['date'][0]);
+        $this->assertEquals('Required field', $errors['location.state'][0]);
+        $this->assertEquals('Invalid latitude', $errors['location.lat'][0]);
+        $this->assertEquals('Invalid longitude', $errors['location.lon'][0]);
+        $this->assertEquals('Invalid temperature', $errors['temperature.0'][0]);
+    }
+
+    /**
      * Test Add new weather point (POST)
      */
     public function testAddNew(): void
@@ -310,6 +336,5 @@ class APITest extends TestCase
         $this->assertEquals($response->original[0]['location']['city'], 'fubar');
         $this->assertEquals($response->original[0]['location']['state'], 'baz');
         $this->assertEquals($response->original[0]['temperature'][10], 101.9);
-
     }
 }
