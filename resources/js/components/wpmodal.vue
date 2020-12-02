@@ -2,6 +2,7 @@
   <div class="content" v-show="showModal" ref="modal">
     <h2>{{ message }}</h2>
     <div id="wpform">
+      <div class="error" v-if="temperatureCountError">{{ temperatureCountError }}</div>
       <Input
         type="text"
         v-model="point.date"
@@ -14,7 +15,7 @@
         v-model="point.location.city"
         label="City"
         ref="city"
-        :error="errors.city"
+        :error="errors['location.city']"
       />
       <Input
         type="text"
@@ -22,7 +23,7 @@
         label="State"
         ref="state"
         class="state"
-        :error="errors.state"
+        :error="errors['location.state']"
       />
       <div class="latlon">
         <Input
@@ -31,7 +32,7 @@
           label="Latitude"
           ref="lat"
           class="geo"
-          :error="errors.lat"
+          :error="errors['location.lat']"
         />
         <Input
           type="text"
@@ -39,7 +40,7 @@
           label="Longitude"
           ref="lon"
           class="geo"
-          :error="errors.lon"
+          :error="errors['location.lon']"
         />
       </div>
       <div class="temps">
@@ -96,6 +97,12 @@ export default {
     };
   },
 
+  computed: {
+    temperatureCountError() {
+      return this.errors['temperature']
+    },
+  },
+
   mounted() {
     document.body.prepend(this.$refs.backdrop);
   },
@@ -116,32 +123,29 @@ export default {
     },
 
     tempError(idx) {
-      return this.errors.temperature ? this.errors.temperature[idx] : "";
+      return this.errors[`temperature.${idx}`]
     },
 
     async save(event) {
       event.preventDefault();
       try {
-        this.errors = [];
+        this.errors = {};
         let id = this.point.id;
-        let resp = null;
-        try {
-          id = parseInt(id);
-          resp = await await axios.patch(`/api/weather`, this.point);
-        } catch {
-          resp = await await axios.post("/api/weather", this.point);
-        }
-
+        let resp = null
+        if (id)
+          resp = await axios.patch(`/api/weather`, this.point)
+        else
+          resp = await axios.post(`/api/weather`, this.point)
         if (resp.status === 200 || resp.status === 201) {
           this.showModal = false;
           this.$emit("saved");
         }
-      } catch (errors) {
-        let messages = [];
-        for (const error of Object.entries(errors.response.data.errors)) {
-          messages.push(`${error[0]}: ${error[1]}`);
-          this.errors = [...messages];
-        }
+      } catch (error) {
+        const errors = {};
+        for (const err of Object.entries(error.response.data.errors))
+          // Laravel validator puts the error messages in an array
+          errors[err[0]] = err[1][0]
+          this.errors = errors
       }
     },
 

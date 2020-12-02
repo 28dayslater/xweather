@@ -256,7 +256,7 @@ class APITest extends TestCase
                 'lat' => 'fu',
                 'lon' => 'bar'
             ],
-            'temperature' => array_fill(0, 24, 25.0)
+            'temperature' => array_fill(0, 23, 25.0)
         ];
         $weatherPoint['temperature'][0] = 'xxx';
 
@@ -264,10 +264,11 @@ class APITest extends TestCase
         $response->assertStatus(422);
         $errors = $response->original['errors'];
         $this->assertEquals('Invalid date', $errors['date'][0]);
-        $this->assertEquals('Required field', $errors['location.state'][0]);
-        $this->assertEquals('Invalid latitude', $errors['location.lat'][0]);
-        $this->assertEquals('Invalid longitude', $errors['location.lon'][0]);
-        $this->assertEquals('Invalid temperature', $errors['temperature.0'][0]);
+        $this->assertEquals('Required', $errors['location.state'][0]);
+        $this->assertEquals('Invalid lat', $errors['location.lat'][0]);
+        $this->assertEquals('Invalid lon', $errors['location.lon'][0]);
+        $this->assertEquals('Invalid', $errors['temperature.0'][0]);
+        $this->assertEquals('Temperature must contain exactly 24 values', $errors['temperature'][0]);
     }
 
     /**

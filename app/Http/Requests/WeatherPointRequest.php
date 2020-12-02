@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use \Illuminate\Validation\Validator;
+use Log;
 
 class WeatherPointRequest extends FormRequest
 {
@@ -30,32 +31,35 @@ class WeatherPointRequest extends FormRequest
             'location.state' => 'required',
             'location.lat' => 'required|numeric',
             'location.lon' => 'required|numeric',
-            // It would be easy to require all 24 values. Let's just make it
-            // a little more interesting by requiring some to be present
-            // (See withValidator())
-            'temperature.*' => 'nullable|numeric'
+            'temperature.*' => 'required|numeric'
         ];
     }
 
     /**
-     * Ensure that there is at least some temperature points populated.
+     * Ensure that there is exactly 24 temperature points.
      */
     public function withValidator($validator)
     {
+        $validator->after(function($validator) {
+            if (count($validator->getData()['temperature']) !== 24) {
+                $validator->errors()->add('temperature', 'Temperature must contain exactly 24 values');
+            }
+        });
     }
 
     public function messages()
     {
         return [
-            'date.required' => 'Required field',
+            'date.required' => 'Required',
             'date.date' => 'Invalid date',
-            'location.city.required' => 'Required field',
-            'location.state.required' => 'Required field',
-            'location.lon.required' => 'Required field',
-            'location.lat.required' => 'Required field',
-            'location.lat.numeric' => 'Invalid latitude',
-            'location.lon.numeric' => 'Invalid longitude',
-            'temperature.*.numeric' => 'Invalid temperature'
+            'location.city.required' => 'Required',
+            'location.state.required' => 'Required',
+            'location.lon.required' => 'Required',
+            'location.lat.required' => 'Required',
+            'location.lat.numeric' => 'Invalid lat',
+            'location.lon.numeric' => 'Invalid lon',
+            'temperature.*.required' => 'Requiured',
+            'temperature.*.numeric' => 'Invalid'
         ];
     }
 }
