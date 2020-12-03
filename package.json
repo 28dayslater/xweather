@@ -24,6 +24,7 @@
         "vue-template-compiler": "^2.6.10"
     },
     "dependencies": {
+        "luxon": "^1.25.0",
         "moment": "^2.29.1",
         "short-uuid": "^4.1.0"
     }
