@@ -33,13 +33,13 @@ class WeatherController extends Controller
         // DB::enableQueryLog();
 
         $results = [];
-        $dbdata = null;
         $doFilter = false;
+        $validatedData = $this->validateFilters($request);
 
-        $startDt = $request->query('start', null);
-        $endDt = $request->query('end', null);
-        $lat = $request->query('lat', null);
-        $lon = $request->query('lon', null);
+        $startDt = $validatedData['start'] ?? null;
+        $endDt = $validatedData['end'] ?? null;
+        $lat = $validatedData['lat'] ?? null;
+        $lon = $validatedData['lon'] ?? null;
 
         $orderBy = function () use (&$query, $request) {
             if ($request->query('latest', null) === 'y')
@@ -49,45 +49,18 @@ class WeatherController extends Controller
                 $query = $query->orderBy('id');
         };
 
-        // TODO: This has become too long and too complicated. REFACTOR ME!
         if ($lat === null && $lon === null && $startDt === null && $endDt === null) {
             // Get'em all
             $query = Location::with('temps');
             $orderBy();
             $dbData = $query->cursor();
         } else {
-            $errors = [];
-            // Filter by latitude+longitude, start date, end date
-            // XXX: use a validator instead?
-            if ($lat !== null && $lon !== null) {
-                if (!is_numeric($lat))
-                    $errors['lat']  = 'Invalid latitude';
-                if (!is_numeric($lon))
-                    $errors['lon'] = 'Invalid longitude';
-                // TODO: the code silently ignores a case where there is only lat or lon
-                // That should probably be an error?
-            }
-
-            if ($startDt) { // have start date
-                $startDt = MyHelpers::parseDate($startDt);
-                if (!$startDt)
-                    $errors['start'] = 'Invalid start date';
-            }
-            if ($endDt) { // have end date
-                $endDt = MyHelpers::parseDate($endDt);
-                if (!$endDt)
-                    $errors['end'] = 'Invalid end date';
-            }
-
-            if (count($errors) !== 0)
-                return response()->json(['errors' => $errors], 422);
-
             $query = Location::query()->with('temps');
 
             if ($startDt)
-                $query = $query->whereDate('date', '>=', $startDt);
+                $query = $query->whereDate('date', '>=', MyHelpers::parseDate($startDt));
             if ($endDt)
-                $query = $query->whereDate('date', '<=', $endDt);
+                $query = $query->whereDate('date', '<=', MyHelpers::parseDate($endDt));
             if ($lat !== null && $lon !== null)
                 $query = $query->where('lat', $lat)->where('lon', $lon);
 
@@ -109,6 +82,34 @@ class WeatherController extends Controller
         return response()->json($results);
     }
 
+    /**
+     * Ensure GET query parameters are correct.
+     * @return array - validated data
+     */
+    protected function validateFilters($request): array
+    {
+        $validator = Validator::make($request->query(),
+            [
+                'start' => 'nullable|date',
+                'end' => 'nullable|date|after_or_equal:start',
+                'lat' => 'nullable|numeric|between:-90,90',
+                'lon' => 'nullable|numeric|between:-180,180'
+            ],
+            [
+                'start.date' => 'Invalid start date',
+                'end.date' => 'Invalid end date',
+                'end.after_or_equal' => 'End date before start date',
+                'lat.numeric' => 'Invalid lat',
+                'lon.numeric' => 'Invalid lon',
+                'lat.required_with' => 'Both lat and lon required',
+                'lon.required_with' => 'Both lat and lon required',
+                'lat.between' => 'Out of range (-90 to 90)',
+                'lon.between' => 'Out of range (-180 to 180)',
+            ])->after(function ($validator) {
+
+            });
+        return $validator->validated();
+    }
 
     /**
      * Show the form for creating a new resource.

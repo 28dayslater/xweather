@@ -165,8 +165,28 @@ class APITest extends TestCase
             }
         }
 
-        $response = $this->get('/api/weather?lat=31.4428&lon=-100.4503&start=20201020&end=20101020');
+        $response = $this->get('/api/weather?lat=31.4428&lon=-100.4503&start=20201020&end=20201021');
         $response->assertJsonCount(1);
+    }
+
+    public function testFilterParamsValidation(): void
+    {
+        // TODO: if both params are invalid, test if there are two keys in the errors
+        $this->json('GET', '/api/weather?start=2010-fubar-xx&end=2011-12-31')
+            ->assertStatus(422);
+        $this->json('GET', '/api/weather?start=20100102&end=20x1-12-31')
+            ->assertStatus(422);
+        $this->json('GET', '/api/weather?start=2015-06-32&end=19700000')
+            ->assertStatus(422);
+        $this->json('GET', '/api/weather?start=20100102&end=200100101')
+            ->assertStatus(422);
+        $this->json('GET', '/api/weather?lat=xx&lon=100')
+            ->assertStatus(422);
+        $this->json('GET', '/api/weather?lat=-15&lon=-181')
+            ->assertStatus(422);
+        // This one fails (required_with did not work - need to use after to ensure that both are present or absent)
+        $this->json('GET', '/api/weather?lat=-33.155')
+            ->assertStatus(422);
     }
 
     /**
