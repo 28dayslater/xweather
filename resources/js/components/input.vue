@@ -10,20 +10,53 @@
       @blur="showCal = false"
       ref="input"
       :class="{date: isDate}"
+      :readonly="isDate"
       required
     />
     <label v-if="label" :for="inputId">{{ label }}</label>
     <p v-if="error">{{ error }}</p>
 
-    <table class="cal" v-if="isDate && showCal">
+    <!-- IDEA: How about making the popup calendar a separate component that is somehow attached to an input?
+               Use a scoped/named slot here? --->
+    <table v-if="isDate && showCal">
+      <thead>
+        <tr>
+          <th colspan="7">
+            <div>
+              <div>
+                <svg width="2rem" height="2rem" viewBox="0 0 24 24" @click="shift('-y')">
+                  <path d="M14 7l-5 5 5 5V7z" fill="currentColor" />
+                </svg>
+                <span>{{ currentYear }}</span>
+                <svg width="2rem" height="2rem" viewBox="0 0 24 24" style="transform: scale(-1,1)" @click="shift('+y')">
+                  <path d="M14 7l-5 5 5 5V7z" fill="currentColor" />
+                </svg>
+              </div>
+              <div>
+                <svg width="2rem" height="2rem" viewBox="0 0 24 24" @click="shift('-m')">
+                  <path d="M14 7l-5 5 5 5V7z" fill="currentColor" />
+                </svg>
+                <span>{{ currentMonth }}</span>
+                <svg width="2rem" height="2rem" viewBox="0 0 24 24" style="transform: scale(-1,1)" @click="shift('+m')">
+                  <path d="M14 7l-5 5 5 5V7z" fill="currentColor" />
+                </svg>
+              </div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
       <tr v-for="(week, widx) in days" :key="`week${widx}`">
           <td v-for="(day, didx) in week"
-              :class="{selected: widx === weekIdx && didx === dayIdx, inactive: day.month < days[2][4].month}"
-              :key="`day_${widx}_${didx}`">
-            {{ day.day }}
+              :class="{selected: widx === weekIdx && didx === dayIdx, inactive: day.month !== days[2][4].month}"
+              :key="`day_${widx}_${didx}`"
+              @click="chooseDay(widx,didx)">
+          {{ day.day }}
           </td>
       </tr>
+      </tbody>
     </table>
+
     <svg class="cal-ico" v-if="isDate" viewBox="0 0 24 24" width="1rem" height="1rem" pointer-events="all">
       <path d="M0 0h24v24H0V0z" fill="none"/>
       <path fill="currentColor" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V10h16v11zm0-13H4V5h16v3z"/>
@@ -44,8 +77,13 @@ export default {
     value: {
       type: String,
       required: true,
+      validator(value) {
+        if (this.type === 'date')
+          return value === '' || DateTime.fromISO(value).isValid
+        return true
+      }
     },
-    type: String,
+    type: String,   // TODO: validate if text|date|password
     label: String,
     error: String,
   },
