@@ -77,11 +77,6 @@ export default {
     value: {
       type: String,
       required: true,
-      validator(value) {
-        if (this.type === 'date')
-          return value === '' || DateTime.fromISO(value).isValid
-        return true
-      }
     },
     type: String,   // TODO: validate if text|date|password
     label: String,
